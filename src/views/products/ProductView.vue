@@ -6,7 +6,7 @@
         <a href="#" class="hidden md:block">Stainless steel furniture</a>
         <a href="#">shelves </a>
         <a href="#">Stainless steel shelves </a>
-        <a href="#">Stainless steel shelf Basic 1500x500x1800 mm</a>
+        <a href="#">{{ product.name }}</a>
       </div>
 
       <div class="product__header">
@@ -15,13 +15,13 @@
         </div>
 
         <h1 class="product__name">
-          Stainless steel shelf Basic 1500x500x1800 mm
+          {{ product.name }}
         </h1>
         <div class="flex flex-wrap items-center gap-4">
           <div class="product__rating">
             <img src="/images/ratings.jpg" alt="" />
           </div>
-          <div class="product__sku">Item no.: GH-RR-BASIC1550</div>
+          <div class="product__sku">Item no.: {{ product.sku }}</div>
         </div>
       </div>
 
@@ -100,13 +100,13 @@
             </div>
             <div class="buy-box">
               <div class="buy-box__main">
-                <div class="buy-box-price__badge">-53%</div>
+                <div v-if="specialPrice" class="buy-box-price__badge">-{{ percentOff }}%</div>
                 <div class="buy-box-price__display">
-                  <span>€356</span>
-                  €166.90
+                  <span v-if="specialPrice">{{ product.price | currencyNoDecimal }}</span>
+                  {{ finalPrice | currency }}
                 </div>
-                <div class="buy-box-price__tax">including VAT €198.61</div>
-                <div class="buy-box-price__savings">You save: €189.10</div>
+                <div class="buy-box-price__tax">including VAT {{ includingVat | currency }}</div>
+                <div v-show="specialPrice" class="buy-box-price__savings">You save: {{ product.price - product.special_price | currency }}</div>
 
                 <div class="buy-box__purchase-area">
                   <NumberInput v-model="quantity" />
@@ -129,15 +129,16 @@
                   />
                 </svg>
                 <div class="row__shipping__text">
-                  <div
-                    class="delivery-time__date"
-                    v-tooltip="
-                      'Estimated delivery date excluding public holidays'
-                    "
-                  >
-                    Delivery by: May 9th, 2024
-                  </div>
-                  <VPopover trigger="hover">
+                  <VPopover trigger="click" placement="bottom-start">
+                    <div class="delivery-time__date">
+                      Delivery by: May 9th, 2024
+                    </div>
+                    <template #popover>
+                      Estimated delivery date excluding public holidays
+                    </template>
+                  </VPopover>
+
+                  <VPopover trigger="click" placement="bottom-start">
                     <div class="shipping-information">Free shipping</div>
 
                     <template #popover>
@@ -335,6 +336,23 @@ export default {
     NumberInput,
   },
 
+  filters: {
+    currency(value) {
+      return value.toLocaleString("de-DE", {
+        style: "currency",
+        currency: "EUR",
+      });
+    },
+
+    currencyNoDecimal(value) {
+      return value.toLocaleString("de-DE", {
+        style: "currency",
+        currency: "EUR",
+        minimumFractionDigits: 0,
+      });
+    }
+  },
+
   data() {
     return {
       quantity: 1,
@@ -344,6 +362,22 @@ export default {
   computed: {
     sku() {
       return this.$route.params.sku;
+    },
+
+    finalPrice() {
+      return this.specialPrice || this.product.price;
+    },
+
+    specialPrice() {
+      return this.product.special_price;
+    },
+
+    includingVat() {
+      return this.finalPrice * (1 + this.product.tax_rate / 100);
+    },
+
+    percentOff() {
+      return Math.round((1 - this.specialPrice / this.product.price) * 100);
     },
 
     product() {
